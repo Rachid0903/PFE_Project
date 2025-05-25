@@ -73,7 +73,10 @@ const Dashboard: React.FC = () => {
               pressure: Number(values.pressure),
               rssi: Number(values.rssi),
               uptime: Number(values.uptime),
-              timestamp: Number(values.timestamp)
+              // S'assurer que le timestamp est valide, sinon utiliser la date actuelle
+              timestamp: Number(values.timestamp) > 1000000000 
+                ? Number(values.timestamp) 
+                : Math.floor(Date.now() / 1000)
             };
             return sensorData;
           });

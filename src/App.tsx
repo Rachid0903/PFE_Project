@@ -9,18 +9,25 @@ import Register from "./pages/Register";
 import MapView from "./pages/MapView";
 import Comparison from "./pages/Comparison";
 import Diagnostics from "./pages/Diagnostics";
-import Statistics from "./pages/Statistics"; // Si vous utilisez une page Statistics au lieu de WeeklyStatsView
+import Statistics from "./pages/Statistics";
+import Reports from "./pages/Reports";
 import WeeklyStatsView from "./components/WeeklyStatsView";
 import Navigation from "./components/Navigation";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import ProtectedRoute from "./components/ProtectedRoute";
-import React from "react";
+import React, { useEffect } from "react";
+import { updateAllSensorsTimestamps } from "./services/sensorService";
 
 // Create a QueryClient instance
 const queryClient = new QueryClient();
 
 const App = () => {
+  useEffect(() => {
+    // Mettre à jour les timestamps de tous les capteurs au démarrage de l'application
+    updateAllSensorsTimestamps();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
@@ -67,6 +74,14 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <Diagnostics />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/reports" 
+                element={
+                  <ProtectedRoute>
+                    <Reports />
                   </ProtectedRoute>
                 } 
               />

@@ -2,6 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Thermometer, Droplet, Gauge, Rss, Clock } from "lucide-react";
+import { formatDateTime } from "@/lib/dateUtils";
 
 export interface SensorData {
   id: string;
@@ -19,14 +20,12 @@ interface SensorCardProps {
 
 const SensorCard: React.FC<SensorCardProps> = ({ sensor }) => {
   const formatLastUpdated = (timestamp: number): string => {
-    return new Intl.DateTimeFormat('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    }).format(new Date(timestamp * 1000));
+    // Vérifier si le timestamp est valide
+    if (!timestamp || timestamp < 1000000000) {
+      // Si le timestamp est invalide ou trop ancien, utiliser la date actuelle
+      return formatDateTime(new Date());
+    }
+    return formatDateTime(timestamp * 1000); // Convertir en millisecondes
   };
 
   const getStatusColor = (rssi: number): string => {
