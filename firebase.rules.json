@@ -1,0 +1,17 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "sensorHistory": {
+      "$sensorId": {
+        ".indexOn": ["timestamp"]
+      }
+    },
+    "alerts": {
+      ".indexOn": ["sent", "timestamp"]
+    },
+    "emailLogs": {
+      ".indexOn": ["timestamp"]
+    }
+  }
+}
