@@ -11,6 +11,7 @@ import Comparison from "./pages/Comparison";
 import Diagnostics from "./pages/Diagnostics";
 import Statistics from "./pages/Statistics";
 import Reports from "./pages/Reports";
+import Alerts from "./pages/Alerts";
 import WeeklyStatsView from "./components/WeeklyStatsView";
 import Navigation from "./components/Navigation";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -84,6 +85,14 @@ const App = () => {
                     <Reports />
                   </ProtectedRoute>
                 } 
+              />
+              <Route
+                path="/alerts"
+                element={
+                  <ProtectedRoute>
+                    <Alerts />
+                  </ProtectedRoute>
+                }
               />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>

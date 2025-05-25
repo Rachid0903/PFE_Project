@@ -24,7 +24,7 @@ const MapView: React.FC = () => {
   const [sensors, setSensors] = useState<SensorData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMetric, setSelectedMetric] = useState<'temperature' | 'humidity' | 'rssi'>('temperature');
-  const [mapImage, setMapImage] = useState<string>('/floorplan.png'); // Chemin vers l'image du plan
+  const [mapImage, setMapImage] = useState<string>('/farm-map.png'); // Chemin vers l'image du plan agricole
 
   // Charger les données des capteurs
   useEffect(() => {
@@ -36,18 +36,36 @@ const MapView: React.FC = () => {
         
         if (snapshot.exists()) {
           const sensorsData: SensorData[] = [];
+          
+          // Définir des zones réalistes avec des coordonnées cohérentes
+          const zones = [
+            { name: 'Champ de blé', x: 30, y: 40, radius: 10 },
+            { name: 'Verger', x: 70, y: 30, radius: 8 },
+            { name: 'Vignoble', x: 25, y: 70, radius: 12 },
+            { name: 'Serre', x: 65, y: 65, radius: 10 },
+            { name: 'Potager', x: 75, y: 75, radius: 6 }
+          ];
+          
           snapshot.forEach((childSnapshot) => {
             const id = childSnapshot.key;
             const data = childSnapshot.val();
             if (id) {
-              // Générer des positions aléatoires pour la démo
+              // Attribuer une zone à chaque capteur
+              const zoneIndex = parseInt(id) % zones.length;
+              const zone = zones[zoneIndex];
+              
+              // Positionner le capteur dans sa zone avec un léger décalage aléatoire
+              // pour éviter que tous les capteurs d'une même zone soient au même endroit
+              const offsetX = (Math.random() - 0.5) * zone.radius;
+              const offsetY = (Math.random() - 0.5) * zone.radius;
+              
               sensorsData.push({
                 id,
                 name: `Capteur ${id}`,
                 location: {
-                  x: Math.random() * 80 + 10, // Position X entre 10% et 90%
-                  y: Math.random() * 80 + 10, // Position Y entre 10% et 90%
-                  zone: ['Salon', 'Cuisine', 'Chambre', 'Bureau', 'Salle de bain'][Math.floor(Math.random() * 5)]
+                  x: Math.max(5, Math.min(95, zone.x + offsetX)), // Limiter entre 5% et 95%
+                  y: Math.max(5, Math.min(95, zone.y + offsetY)), // Limiter entre 5% et 95%
+                  zone: zone.name
                 },
                 ...data
               });
@@ -146,6 +164,27 @@ const MapView: React.FC = () => {
               </button>
             </div>
             
+            <div className="flex justify-center mb-4 text-xs text-muted-foreground">
+              <div className="flex items-center mr-4">
+                <div className="w-3 h-3 rounded-full bg-green-500 mr-1"></div>
+                <span>{selectedMetric === 'temperature' ? 'Optimal (18-22°C)' : 
+                       selectedMetric === 'humidity' ? 'Optimal (40-60%)' : 
+                       'Signal fort (>-70dBm)'}</span>
+              </div>
+              <div className="flex items-center mr-4">
+                <div className="w-3 h-3 rounded-full bg-blue-500 mr-1"></div>
+                <span>{selectedMetric === 'temperature' ? 'Frais (<18°C)' : 
+                       selectedMetric === 'humidity' ? 'Humide (>60%)' : 
+                       'Signal moyen (-70 à -80dBm)'}</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-red-500 mr-1"></div>
+                <span>{selectedMetric === 'temperature' ? 'Chaud (>22°C)' : 
+                       selectedMetric === 'humidity' ? 'Sec (<40%)' : 
+                       'Signal faible (<-80dBm)'}</span>
+              </div>
+            </div>
+            
             {isLoading ? (
               <div className="flex justify-center items-center h-[600px]">
                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
@@ -154,13 +193,43 @@ const MapView: React.FC = () => {
               <div className="relative w-full h-[600px] border border-border rounded-lg overflow-hidden">
                 <img 
                   src={mapImage} 
-                  alt="Plan des locaux" 
+                  alt="Plan des terres agricoles" 
                   className="w-full h-full object-cover opacity-50"
                   onError={() => {
                     // Fallback si l'image n'existe pas
-                    setMapImage('/placeholder-floorplan.png');
+                    setMapImage('/placeholder-farm-map.png');
                   }}
                 />
+                
+                {/* Afficher les zones */}
+                <div className="absolute inset-0">
+                  {['Champ de blé', 'Verger', 'Vignoble', 'Serre', 'Potager'].map((zoneName) => {
+                    const zonePositions = {
+                      'Champ de blé': { x: 30, y: 40, width: 25, height: 20 },
+                      'Verger': { x: 70, y: 30, width: 20, height: 15 },
+                      'Vignoble': { x: 25, y: 70, width: 22, height: 18 },
+                      'Serre': { x: 65, y: 65, width: 20, height: 16 },
+                      'Potager': { x: 75, y: 75, width: 15, height: 12 }
+                    };
+                    const zone = zonePositions[zoneName as keyof typeof zonePositions];
+                    
+                    return (
+                      <div 
+                        key={zoneName}
+                        className="absolute border border-dashed border-gray-400 rounded-md flex items-center justify-center text-xs text-gray-500"
+                        style={{
+                          left: `${zone.x - zone.width/2}%`,
+                          top: `${zone.y - zone.height/2}%`,
+                          width: `${zone.width}%`,
+                          height: `${zone.height}%`,
+                          backgroundColor: 'rgba(200, 200, 200, 0.1)'
+                        }}
+                      >
+                        {zoneName}
+                      </div>
+                    );
+                  })}
+                </div>
                 
                 {sensors.map((sensor) => (
                   <div
@@ -246,4 +315,15 @@ const MapView: React.FC = () => {
 };
 
 export default MapView;
+
+
+
+
+
+
+
+
+
+
+
 

@@ -1,14 +1,12 @@
 import { database } from './firebaseConfig';
 import { ref, get, query, orderByChild, equalTo, update } from 'firebase/database';
 import { Alert, getAlertConfig } from './alertService';
-import { sendAlertSMS, getTwilioConfig } from './smsService';
-import { sendEmail } from './emailService';
-import { sendAlertWhatsApp } from './whatsappService';
+import { getTwilioConfig } from './smsService';
 
 // Traiter les alertes en attente
 export const processAlerts = async (): Promise<void> => {
   try {
-    // Récupérer la configuration en une seule fois
+    // Récupérer toutes les configurations en une seule fois
     const [twilioConfig, alertConfig] = await Promise.all([
       getTwilioConfig(),
       getAlertConfig()
@@ -46,7 +44,8 @@ async function processAlert(alertId, alertObj, twilioConfig, alertConfig) {
     let success = false;
     
     // Vérifier si l'alerte doit être envoyée par email
-    if (alertConfig.userEmail) {
+    if (alertConfig.userEmail && alertConfig.userEmail.includes('@')) {
+      const { sendEmail } = await import('./emailService');
       const emailSuccess = await sendEmail(alertConfig.userEmail, 
         `ALERTE LoRa Sensor View - Capteur ${alertObj.sensorId}`, 
         alertObj.message || `Alerte déclenchée pour le capteur ${alertObj.sensorId}`);
@@ -54,18 +53,10 @@ async function processAlert(alertId, alertObj, twilioConfig, alertConfig) {
     }
     
     // Vérifier si l'alerte doit être envoyée par SMS
-    if (alertObj.userEmail && !alertObj.userEmail.includes('@')) {
+    if (twilioConfig.enabled && alertConfig.userEmail && !alertConfig.userEmail.includes('@')) {
+      const { sendAlertSMS } = await import('./smsService');
       const smsSuccess = await sendAlertSMS(alertObj, twilioConfig);
       success = success || smsSuccess;
-    }
-    
-    // Vérifier si l'alerte doit être envoyée par WhatsApp
-    if (alertConfig.whatsappNumber) {
-      const whatsappSuccess = await sendAlertWhatsApp({
-        ...alertObj,
-        whatsappNumber: alertConfig.whatsappNumber
-      });
-      success = success || whatsappSuccess;
     }
     
     if (success) {
@@ -93,6 +84,16 @@ export const startAlertProcessor = (intervalMs: number = 60000): () => void => {
     clearInterval(intervalId);
   };
 };
+
+
+
+
+
+
+
+
+
+
 
 
 

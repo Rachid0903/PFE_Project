@@ -101,6 +101,17 @@ const Navigation: React.FC = () => {
                 <FileText className="h-4 w-4 mr-2" />
                 Rapports
               </Link>
+              <Link
+                to="/alerts"
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                  location.pathname === "/alerts"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Bell className="h-4 w-4 mr-2" />
+                Alertes
+              </Link>
             </div>
           </div>
           <div className="flex items-center">
@@ -155,6 +166,7 @@ const NavLink: React.FC<NavLinkProps> = ({ to, icon, label, active }) => {
 };
 
 export default Navigation;
+
 
 
 

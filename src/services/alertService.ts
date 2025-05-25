@@ -9,7 +9,6 @@ export interface AlertThreshold {
 export interface AlertConfig {
   enabled: boolean;
   userEmail: string;
-  whatsappNumber: string; // Ajout du numéro WhatsApp
   cooldownMinutes: number;
   thresholds: {
     temperature: AlertThreshold;
@@ -34,7 +33,6 @@ export interface Alert {
 const defaultAlertConfig: AlertConfig = {
   enabled: true,
   userEmail: "",
-  whatsappNumber: "", // Valeur par défaut
   cooldownMinutes: 30,
   thresholds: {
     temperature: { min: 10, max: 35 },
@@ -173,6 +171,10 @@ export const getUnsentAlerts = async (): Promise<Alert[]> => {
     return [];
   }
 };
+
+
+
+
 
 
 

@@ -2,22 +2,25 @@ import React, { useState, useEffect } from "react";
 import { database } from "@/services/firebaseConfig";
 import { ref, get, onValue, off } from "firebase/database";
 import { toast } from "@/components/ui/sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Alert as AlertComponent } from "@/components/ui/alert";
-import { AlertCircle, Bell, CheckCircle } from "lucide-react";
-import { Alert, AlertConfig, getAlertConfig, updateAlertConfig } from "@/services/alertService";
-import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert as AlertComponent } from "@/components/ui/alert";
+import { AlertCircle, Bell, CheckCircle, MessageCircle, Settings } from "lucide-react";
+import { Alert, AlertConfig, getAlertConfig, updateAlertConfig } from "@/services/alertService";
+import { Switch } from "@/components/ui/switch";
 import { formatDateTime } from "@/lib/dateUtils";
+import { useNavigate } from "react-router-dom";
+import AlertServiceStatus from "@/components/AlertServiceStatus";
 
 const Alerts: React.FC = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [alertConfig, setAlertConfig] = useState<AlertConfig | null>(null);
   const [activeTab, setActiveTab] = useState("history");
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Fetch alert history
@@ -113,6 +116,11 @@ const Alerts: React.FC = () => {
     }
   };
 
+  // Supprimer la fonction handleTestWhatsApp
+  const handleTestWhatsApp = async () => {
+    // ...
+  };
+
   return (
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
@@ -121,12 +129,52 @@ const Alerts: React.FC = () => {
       
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="mb-6">
         <TabsList className="mb-4">
-          <TabsTrigger value="history">Historique</TabsTrigger>
-          <TabsTrigger value="settings">Paramètres</TabsTrigger>
+          <TabsTrigger value="history">
+            <Bell className="h-4 w-4 mr-2" />
+            Alertes
+          </TabsTrigger>
+          <TabsTrigger value="settings">
+            <Settings className="h-4 w-4 mr-2" />
+            Configuration
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="history">
           <div className="grid gap-4">
+            {/* Ajout du champ email pour les alertes */}
+            <Card className="mb-4">
+              <CardHeader>
+                <CardTitle>Configuration des notifications</CardTitle>
+                <CardDescription>Définissez l'adresse email pour recevoir les alertes</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">Email pour recevoir les alertes</Label>
+                    <div className="flex gap-4">
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="votre@email.com"
+                        value={alertConfig?.userEmail || ""}
+                        onChange={(e) => alertConfig && handleConfigUpdate({ userEmail: e.target.value })}
+                        className="flex-1"
+                      />
+                      <Button 
+                        onClick={() => alertConfig && handleConfigUpdate({ userEmail: alertConfig.userEmail })}
+                        disabled={!alertConfig}
+                      >
+                        Enregistrer
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Les alertes seront envoyées à cette adresse email lorsqu'un capteur dépasse les seuils définis.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {isLoading ? (
               <Card>
                 <CardContent className="pt-6">
@@ -169,9 +217,190 @@ const Alerts: React.FC = () => {
         </TabsContent>
         
         <TabsContent value="settings">
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Configuration des alertes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {!alertConfig ? (
+                  <div className="flex justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium">Activer les alertes</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Recevoir des notifications lorsque les capteurs dépassent les seuils définis
+                        </p>
+                      </div>
+                      <Switch 
+                        checked={alertConfig.enabled} 
+                        onCheckedChange={(checked) => handleConfigUpdate({ enabled: checked })} 
+                      />
+                    </div>
+                    
+                    {alertConfig.enabled && (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="email-input">Email pour les alertes</Label>
+                          <Input
+                            id="email-input"
+                            type="email"
+                            placeholder="votre@email.com"
+                            value={alertConfig.userEmail || ""}
+                            onChange={(e) => handleConfigUpdate({ userEmail: e.target.value })}
+                          />
+                        </div>
+                        
+                        {/* Ajout des seuils d'alerte */}
+                        <div className="space-y-4">
+                          <h3 className="font-medium">Seuils d'alerte</h3>
+                          
+                          {/* Température */}
+                          <div className="space-y-2">
+                            <Label>Température (°C)</Label>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label htmlFor="temp-min" className="text-sm">Min</Label>
+                                <Input
+                                  id="temp-min"
+                                  type="number"
+                                  value={alertConfig.thresholds.temperature.min}
+                                  onChange={(e) => handleConfigUpdate({
+                                    thresholds: {
+                                      ...alertConfig.thresholds,
+                                      temperature: {
+                                        ...alertConfig.thresholds.temperature,
+                                        min: Number(e.target.value)
+                                      }
+                                    }
+                                  })}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="temp-max" className="text-sm">Max</Label>
+                                <Input
+                                  id="temp-max"
+                                  type="number"
+                                  value={alertConfig.thresholds.temperature.max}
+                                  onChange={(e) => handleConfigUpdate({
+                                    thresholds: {
+                                      ...alertConfig.thresholds,
+                                      temperature: {
+                                        ...alertConfig.thresholds.temperature,
+                                        max: Number(e.target.value)
+                                      }
+                                    }
+                                  })}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Humidité */}
+                          <div className="space-y-2">
+                            <Label>Humidité (%)</Label>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label htmlFor="humidity-min" className="text-sm">Min</Label>
+                                <Input
+                                  id="humidity-min"
+                                  type="number"
+                                  value={alertConfig.thresholds.humidity.min}
+                                  onChange={(e) => handleConfigUpdate({
+                                    thresholds: {
+                                      ...alertConfig.thresholds,
+                                      humidity: {
+                                        ...alertConfig.thresholds.humidity,
+                                        min: Number(e.target.value)
+                                      }
+                                    }
+                                  })}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="humidity-max" className="text-sm">Max</Label>
+                                <Input
+                                  id="humidity-max"
+                                  type="number"
+                                  value={alertConfig.thresholds.humidity.max}
+                                  onChange={(e) => handleConfigUpdate({
+                                    thresholds: {
+                                      ...alertConfig.thresholds,
+                                      humidity: {
+                                        ...alertConfig.thresholds.humidity,
+                                        max: Number(e.target.value)
+                                      }
+                                    }
+                                  })}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Pression */}
+                          {alertConfig.thresholds.pressure && (
+                            <div className="space-y-2">
+                              <Label>Pression (hPa)</Label>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <Label htmlFor="pressure-min" className="text-sm">Min</Label>
+                                  <Input
+                                    id="pressure-min"
+                                    type="number"
+                                    value={alertConfig.thresholds.pressure.min}
+                                    onChange={(e) => handleConfigUpdate({
+                                      thresholds: {
+                                        ...alertConfig.thresholds,
+                                        pressure: {
+                                          ...alertConfig.thresholds.pressure,
+                                          min: Number(e.target.value)
+                                        }
+                                      }
+                                    })}
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="pressure-max" className="text-sm">Max</Label>
+                                  <Input
+                                    id="pressure-max"
+                                    type="number"
+                                    value={alertConfig.thresholds.pressure.max}
+                                    onChange={(e) => handleConfigUpdate({
+                                      thresholds: {
+                                        ...alertConfig.thresholds,
+                                        pressure: {
+                                          ...alertConfig.thresholds.pressure,
+                                          max: Number(e.target.value)
+                                        }
+                                      }
+                                    })}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            <AlertServiceStatus />
+          </div>
+        </TabsContent>
+        <TabsContent value="whatsapp">
           <Card>
             <CardHeader>
-              <CardTitle>Configuration des alertes</CardTitle>
+              <CardTitle>Configuration WhatsApp</CardTitle>
+              <CardDescription>
+                Configurez les paramètres pour recevoir des alertes via WhatsApp
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {!alertConfig ? (
@@ -182,9 +411,9 @@ const Alerts: React.FC = () => {
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-medium">Activer les alertes</h3>
+                      <h3 className="font-medium">Activer les alertes WhatsApp</h3>
                       <p className="text-sm text-muted-foreground">
-                        Recevoir des notifications lorsque les capteurs dépassent les seuils définis
+                        Recevoir des notifications WhatsApp lorsque les capteurs dépassent les seuils définis
                       </p>
                     </div>
                     <Switch 
@@ -194,33 +423,45 @@ const Alerts: React.FC = () => {
                   </div>
                   
                   {alertConfig.enabled && (
-                    <>
-                      <div className="space-y-2">
-                        <Label htmlFor="email-input">Email pour les alertes</Label>
-                        <Input
-                          id="email-input"
-                          type="email"
-                          placeholder="votre@email.com"
-                          value={alertConfig.userEmail || ""}
-                          onChange={(e) => handleConfigUpdate({ userEmail: e.target.value })}
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="whatsapp-input">Numéro WhatsApp</Label>
+                      <Input
+                        id="whatsapp-input"
+                        type="tel"
+                        placeholder="+33612345678"
+                        value={alertConfig.userEmail || ""}
+                        onChange={(e) => handleConfigUpdate({ userEmail: e.target.value })}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Format international avec indicatif pays (ex: +33612345678)
+                      </p>
                       
-                      <div className="space-y-2">
-                        <Label htmlFor="whatsapp-input">Numéro WhatsApp</Label>
-                        <Input
-                          id="whatsapp-input"
-                          type="tel"
-                          placeholder="+33612345678"
-                          value={alertConfig.whatsappNumber || ""}
-                          onChange={(e) => handleConfigUpdate({ whatsappNumber: e.target.value })}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Format international avec indicatif pays (ex: +33612345678)
-                        </p>
+                      <div className="mt-4">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={handleTestWhatsApp}
+                          disabled={!alertConfig.userEmail}
+                        >
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          Envoyer un message de test
+                        </Button>
                       </div>
-                    </>
+                    </div>
                   )}
+                  
+                  <div className="pt-4 border-t">
+                    <h3 className="font-medium mb-2">Configuration avancée</h3>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => navigate('/whatsapp-config')}
+                    >
+                      Configurer les paramètres avancés WhatsApp
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Configurez les paramètres API pour l'intégration WhatsApp Business
+                    </p>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -232,3 +473,17 @@ const Alerts: React.FC = () => {
 };
 
 export default Alerts;
+
+
+
+
+
+
+
+
+
+
+
+
+
+

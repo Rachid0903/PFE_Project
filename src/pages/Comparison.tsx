@@ -53,11 +53,10 @@ const Comparison: React.FC = () => {
           
           setSensors(sensorsData);
           
-          // Sélectionner les deux premiers capteurs par défaut s'ils existent
-          if (sensorsData.length >= 2) {
+          // Si aucun capteur n'est sélectionné et qu'il y a au moins 2 capteurs disponibles
+          if (selectedSensors.length === 0 && sensorsData.length >= 2) {
+            // Sélectionner les deux premiers capteurs par défaut
             setSelectedSensors([sensorsData[0].id, sensorsData[1].id]);
-          } else if (sensorsData.length === 1) {
-            setSelectedSensors([sensorsData[0].id]);
           }
           
           // Générer des données de comparaison
@@ -75,7 +74,7 @@ const Comparison: React.FC = () => {
     // Rafraîchir les données toutes les 30 secondes
     const interval = setInterval(fetchSensors, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [timeRange]);
 
   // Générer des données de comparaison pour les graphiques
   const generateComparisonData = (sensorsData: SensorData[], range: string) => {
@@ -150,14 +149,60 @@ const Comparison: React.FC = () => {
 
   return (
     <div className="container mx-auto py-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-        <h1 className="text-3xl font-bold mb-2 md:mb-0">Comparaison des capteurs</h1>
-        <div className="flex items-center space-x-4">
-          <DateTimeDisplay />
-        </div>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Comparaison des capteurs</h1>
       </div>
       
-      <div className="grid grid-cols-1 gap-6 mb-6">
+      <div className="grid gap-6 md:grid-cols-2 mb-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Sélection des capteurs</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Capteur 1</label>
+                <select 
+                  className="w-full p-2 border rounded mt-1"
+                  value={selectedSensors[0] || ''}
+                  onChange={(e) => {
+                    const newSelected = [...selectedSensors];
+                    newSelected[0] = e.target.value;
+                    setSelectedSensors(newSelected);
+                  }}
+                >
+                  <option value="">Sélectionner un capteur</option>
+                  {sensors.map(sensor => (
+                    <option key={sensor.id} value={sensor.id}>
+                      {sensor.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium">Capteur 2</label>
+                <select 
+                  className="w-full p-2 border rounded mt-1"
+                  value={selectedSensors[1] || ''}
+                  onChange={(e) => {
+                    const newSelected = [...selectedSensors];
+                    newSelected[1] = e.target.value;
+                    setSelectedSensors(newSelected);
+                  }}
+                >
+                  <option value="">Sélectionner un capteur</option>
+                  {sensors.map(sensor => (
+                    <option key={sensor.id} value={sensor.id}>
+                      {sensor.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
         <Card>
           <CardHeader>
             <CardTitle>Sélection des capteurs</CardTitle>
@@ -406,5 +451,11 @@ const Comparison: React.FC = () => {
 };
 
 export default Comparison;
+
+
+
+
+
+
 
 
